@@ -27,7 +27,8 @@
           "locationWhenInUsePermission": "Jerebu uses your location to show the haze reading from the nearest monitoring station."
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

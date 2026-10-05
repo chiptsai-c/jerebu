@@ -1,11 +1,31 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ALERTS_URL, requestPushPermission } from '../push';
 import { colors } from '../theme';
 import { Card, ScreenTitle } from '../components/Common';
 
 const THRESHOLDS = [101, 151, 201, 301];
 
-export default function AlertsScreen({ settings, updateSettings, stations, t, onToggleFollow, indexLabel }) {
+export default function AlertsScreen({ settings, updateSettings, stations, t, onToggleFollow, indexLabel, pushStatus }) {
+  const [permDenied, setPermDenied] = useState(false);
   const followed = settings.followed.map((id) => stations.find((s) => s.id === id)).filter(Boolean);
+
+  async function toggleAlerts(on) {
+    if (on && ALERTS_URL) {
+      const granted = await requestPushPermission().catch(() => false);
+      setPermDenied(!granted);
+      if (!granted) return;
+    }
+    updateSettings({ alertsOn: on });
+  }
+
+  const status = !settings.alertsOn
+    ? null
+    : permDenied
+      ? { text: t.permDenied, error: true }
+      : pushStatus.state === 'error'
+        ? { text: t.pushError(pushStatus.message), error: true }
+        : { text: t.pushStatus[pushStatus.state] };
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -14,10 +34,11 @@ export default function AlertsScreen({ settings, updateSettings, stations, t, on
       <Card>
         <ToggleRow
           label={t.alertsOn}
-          hint={t.alertsOnHint}
+          hint={ALERTS_URL ? t.alertsOnHintPush : t.alertsOnHint}
           value={settings.alertsOn}
-          onChange={(v) => updateSettings({ alertsOn: v })}
+          onChange={toggleAlerts}
         />
+        {status?.text ? <Text style={[styles.hint, status.error && styles.error]}>{status.text}</Text> : null}
       </Card>
 
       <View style={[styles.group, !settings.alertsOn && styles.dimmed]} pointerEvents={settings.alertsOn ? 'auto' : 'none'}>
@@ -105,6 +126,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   group: { gap: 12 },
   dimmed: { opacity: 0.45 },
+  error: { color: '#a11d22' },
   label: { fontSize: 15, color: colors.ink, fontWeight: '500' },
   hint: { fontSize: 12, color: colors.muted, lineHeight: 17 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

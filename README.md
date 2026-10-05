@@ -42,8 +42,29 @@ in `src/data/api.js` on the `MY_API` scale.
 | Stations | Search by town or state, sort worst first or group by state, tap a station to view it, ☆ to follow it |
 | Alerts | Turn on alerts, pick a threshold (101 / 151 / 201 / 301), follow current location and starred stations, sensitive-group switch, English / Bahasa Melayu |
 
-The app sends no notifications. When alerts are on, followed places at or above the chosen level
-are listed in a warning card at the top of the Now tab.
+When alerts are on, followed places at or above the chosen level are listed in a warning card at
+the top of the Now tab.
+
+## Push notifications
+
+Push alerts arrive even when the app is closed. They need three things:
+
+1. **The alerts server deployed.** See [server/README.md](server/README.md). Put its address in `.env`:
+   `EXPO_PUBLIC_ALERTS_URL=https://jerebu-alerts.<your-subdomain>.workers.dev`
+2. **Live data** (a WAQI token), because the server works with WAQI station IDs.
+3. **A development build with Firebase set up** (Android). Push doesn't work in Expo Go.
+   1. In the [Firebase console](https://console.firebase.google.com), create a project and add an Android app
+      with package name `my.jerebu.app`.
+   2. Download `google-services.json` into this folder and add `"googleServicesFile": "./google-services.json"`
+      inside `"android"` in `app.json`.
+   3. In Firebase → Project settings → Service accounts, generate a private key (JSON). Upload it with
+      `eas credentials` → Android → development → Google Service Account → FCM V1.
+   4. Rebuild: `eas build --profile development --platform android`, and install the new APK.
+
+When alerts are switched on, the app asks for notification permission and registers the phone with the
+server: its push token, language, alert level, followed stations and current nearest station. Switching
+alerts off removes it from the server. Tapping a notification opens that station.
+Without `EXPO_PUBLIC_ALERTS_URL`, alerts stay in-app only.
 
 Stations followed or picked while on sample data have different IDs from live stations,
 so follow them again after switching to live data.
