@@ -55,8 +55,10 @@ Push alerts arrive even when the app is closed. They need three things:
 3. **A development build with Firebase set up** (Android). Push doesn't work in Expo Go.
    1. In the [Firebase console](https://console.firebase.google.com), create a project and add an Android app
       with package name `my.jerebu.app`.
-   2. Download `google-services.json` into this folder and add `"googleServicesFile": "./google-services.json"`
-      inside `"android"` in `app.json`.
+   2. Download `google-services.json` into this folder (it's git-ignored; `app.json` already points to it) and
+      store it on EAS so cloud builds can use it without it being in Git:
+      `eas env:create --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret --environment development --environment preview --environment production`
+      ([app.config.js](app.config.js) picks the EAS copy on build servers and the local copy on your PC).
    3. In Firebase → Project settings → Service accounts, generate a private key (JSON). Upload it with
       `eas credentials` → Android → development → Google Service Account → FCM V1.
    4. Rebuild: `eas build --profile development --platform android`, and install the new APK.
