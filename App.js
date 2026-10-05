@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { fetchReadings, fetchStationDetail } from './src/data/api';
-import { SCALES } from './src/data/bands';
+import { SCALES, bandFor, isStale } from './src/data/bands';
+import { HAZE_SKY } from './src/components/HazeLayer';
 import { nearestStation } from './src/data/geo';
 import { loadCache, loadSettings, saveCache, saveSettings } from './src/storage';
 import { placesOverThreshold } from './src/alerts';
+import { syncPushAlerts } from './src/push';
 import { strings } from './src/i18n';
 import { colors } from './src/theme';
 import TabBar from './src/components/TabBar';
@@ -145,6 +148,42 @@ function Main() {
     [stations, settings, nearest],
   );
 
+  // Keep the alerts server in step with the Alerts settings and the nearest station.
+  const [pushStatus, setPushStatus] = useState({ state: 'idle' });
+  const isLive = data?.source === 'waqi';
+  const nearestId = nearest?.station.id;
+  useEffect(() => {
+    if (!settings) return;
+    let cancelled = false;
+    syncPushAlerts({ settings, nearestId, isLive })
+      .then((state) => !cancelled && setPushStatus({ state }))
+      .catch((e) => !cancelled && setPushStatus({ state: 'error', message: e.message }));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    settings?.alertsOn,
+    settings?.threshold,
+    settings?.lang,
+    settings?.followCurrent,
+    settings?.followed.join(','),
+    nearestId,
+    isLive,
+  ]);
+
+  // Tapping a haze alert opens that station on the Now tab.
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const handledResponse = useRef(null);
+  useEffect(() => {
+    const request = lastResponse?.notification.request;
+    const stationId = request?.content.data?.stationId;
+    if (!settings || !stationId || handledResponse.current === request.identifier) return;
+    handledResponse.current = request.identifier;
+    updateSettings({ pinnedId: String(stationId) });
+    setTab('now');
+  }, [lastResponse, settings, updateSettings]);
+
   if (!settings) return <View style={styles.root} />;
 
   const pickStation = (id) => {
@@ -158,7 +197,17 @@ function Main() {
   };
 
   return (
-    <View style={styles.root}>
+    <View
+      style={[
+        styles.root,
+        tab === 'now' &&
+          current &&
+          !isStale(current.station.updatedAt ?? data.updatedAt) && {
+            // Match the Now tab's hazy sky behind the status bar.
+            backgroundColor: HAZE_SKY[bandFor(current.station.api, scale).key],
+          },
+      ]}
+    >
       <StatusBar style="dark" />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
         {tab === 'now' && (
@@ -197,6 +246,7 @@ function Main() {
             t={t}
             onToggleFollow={toggleFollow}
             indexLabel={SCALES[scale].label[settings.lang]}
+            pushStatus={pushStatus}
           />
         )}
       </SafeAreaView>

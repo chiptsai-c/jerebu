@@ -3,3 +3,6 @@
 WAQI_TOKEN=
 # Optional: only needed if you turn on "enhanced push security" in your Expo account.
 EXPO_ACCESS_TOKEN=
+
+# Password for the /admin announcements page. Use a long random one.
+ADMIN_PASSWORD=

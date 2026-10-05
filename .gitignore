@@ -5,3 +5,9 @@ web-build/
 *.log
 .env
 .DS_Store
+
+# Firebase service account keys: private, never commit (upload with `eas credentials` instead)
+*firebase-adminsdk*.json
+
+# Firebase Android settings: stored as the EAS secret GOOGLE_SERVICES_JSON instead (see app.config.js)
+google-services.json

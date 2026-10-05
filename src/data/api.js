@@ -17,12 +17,33 @@ const BARE_NAME_STATES = { Ipoh: 'Perak', Perai: 'Pulau Pinang', Miri: 'Sarawak'
 export const IS_LIVE = Boolean(WAQI_TOKEN);
 
 export async function fetchReadings() {
-  return IS_LIVE ? waqiReadings() : sampleReadings();
+  const data = IS_LIVE ? await waqiReadings() : await sampleReadings();
+  // Development builds only: a fake station that is always Hazardous, for testing the haze and alerts screens.
+  if (__DEV__) data.stations.push(testStation());
+  return data;
+}
+
+export const TEST_STATION_ID = 'TEST-HAZARDOUS';
+
+function testStation() {
+  return {
+    id: TEST_STATION_ID,
+    name: 'Test station (always Hazardous)',
+    state: 'Test',
+    // Far south of Malaysia, so it is never picked as the nearest station.
+    lat: -60,
+    lng: 105,
+    api: 350,
+    pollutant: 'PM2.5',
+    updatedAt: new Date().toISOString(),
+    // A wavy 24 hours in the Hazardous range, ending on the current 350.
+    trend24h: [...Array.from({ length: 23 }, (_, i) => 330 + Math.round(20 * Math.sin(i / 3))), 350],
+  };
 }
 
 // Extra detail for one station (pollutant, forecast). Sample stations already carry theirs.
 export async function fetchStationDetail(id) {
-  if (!IS_LIVE) return null;
+  if (!IS_LIVE || id === TEST_STATION_ID) return null;
   const d = await waqiGet(`/feed/@${id}/`);
   const [name, state] = splitName(d.city?.name);
   return {

@@ -5,6 +5,7 @@ import { colors, radius } from '../theme';
 import BandScale from '../components/BandScale';
 import Sparkline from '../components/Sparkline';
 import Forecast from '../components/Forecast';
+import HazeLayer, { HAZE_SKY } from '../components/HazeLayer';
 import { Card, SampleBanner } from '../components/Common';
 
 const TREND_CHIP = {
@@ -52,76 +53,81 @@ export default function NowScreen({
     source === 'gps' ? t.nearest(distanceKm.toFixed(1)) : source === 'pinned' ? t.chosen : t.defaultStation;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} refreshControl={refresher}>
-      <SampleBanner text={isSample ? t.sample : t.liveSource} />
-      {error && <Text style={styles.error}>{t.loadError(error)}</Text>}
+    <View style={[styles.fill, !stale && { backgroundColor: HAZE_SKY[band.key] }]}>
+      {!stale && <HazeLayer level={band.key} variant="screen" />}
+      <ScrollView contentContainerStyle={styles.content} refreshControl={refresher}>
+        <SampleBanner text={isSample ? t.sample : t.liveSource} />
+        {error && <Text style={styles.error}>{t.loadError(error)}</Text>}
 
-      {overThreshold.length > 0 && (
-        <View style={styles.warn}>
-          <Text style={styles.warnTitle}>{t.overTitle(indexLabel, settings.threshold)}</Text>
-          {overThreshold.map((s) => {
-            const b = bandFor(s.api, scale);
-            return (
-              <Pressable key={s.id} onPress={() => onPick(s.id)} style={styles.warnRow} accessibilityRole="button">
-                <Text style={[styles.warnNum, { backgroundColor: b.color, color: b.text }]}>{s.api}</Text>
-                <Text style={styles.warnName}>{s.name}</Text>
-                <Text style={styles.small}>{bandName(b, lang)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      <View style={styles.locRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{station.name}</Text>
-          <Text style={styles.muted}>
-            {subtitle} · {station.state}
-          </Text>
-        </View>
-        <Text style={styles.small}>{t.updated(formatTime(updatedAt))}</Text>
-      </View>
-
-      <View
-        style={[styles.hero, { backgroundColor: stale ? colors.stale : band.color }]}
-        accessible
-        accessibilityLabel={`${indexLabel} ${station.api}, ${bandName(band, lang)}`}
-      >
-        <Text style={[styles.heroLabel, { color: fg }]}>
-          {indexLabel}
-          {station.pollutant ? ` · ${t.primary(station.pollutant)}` : ''}
-        </Text>
-        <Text style={[styles.big, { color: fg }]}>{station.api}</Text>
-        <Text style={[styles.bandName, { color: fg }]}>{bandName(band, lang)}</Text>
-        <Text style={[styles.otherName, { color: fg }]}>{otherName}</Text>
-        <BandScale value={station.api} scale={scale} />
-        {stale && <Text style={[styles.staleText, { color: fg }]}>{t.stale}</Text>}
-      </View>
-
-      <Card title={t.whatToDo}>
-        {advice.map((line) => (
-          <View key={line} style={styles.adviceRow}>
-            <Text style={styles.bullet}>•</Text>
-            <Text style={styles.adviceText}>{line}</Text>
+        {overThreshold.length > 0 && (
+          <View style={styles.warn}>
+            <Text style={styles.warnTitle}>{t.overTitle(indexLabel, settings.threshold)}</Text>
+            {overThreshold.map((s) => {
+              const b = bandFor(s.api, scale);
+              return (
+                <Pressable key={s.id} onPress={() => onPick(s.id)} style={styles.warnRow} accessibilityRole="button">
+                  <Text style={[styles.warnNum, { backgroundColor: b.color, color: b.text }]}>{s.api}</Text>
+                  <Text style={styles.warnName}>{s.name}</Text>
+                  <Text style={styles.small}>{bandName(b, lang)}</Text>
+                </Pressable>
+              );
+            })}
           </View>
-        ))}
-      </Card>
+        )}
 
-      {station.trend24h ? (
-        <TrendCard station={station} band={band} t={t} />
-      ) : station.forecast ? (
-        <Card title={t.forecastTitle}>
-          <Forecast days={station.forecast} scale={scale} t={t} />
+        <View style={styles.locRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{station.name}</Text>
+            <Text style={styles.muted}>
+              {subtitle} · {station.state}
+            </Text>
+          </View>
+          <Text style={styles.small}>{t.updated(formatTime(updatedAt))}</Text>
+        </View>
+
+        <View
+          style={[styles.hero, { backgroundColor: stale ? colors.stale : band.color }]}
+          accessible
+          accessibilityLabel={`${indexLabel} ${station.api}, ${bandName(band, lang)}`}
+        >
+          {!stale && <HazeLayer level={band.key} />}
+          <Text style={[styles.heroLabel, { color: fg }]}>
+            {indexLabel}
+            {station.pollutant ? ` · ${t.primary(station.pollutant)}` : ''}
+          </Text>
+          <Text style={[styles.big, { color: fg }]}>{station.api}</Text>
+          <Text style={[styles.bandName, { color: fg }]}>{bandName(band, lang)}</Text>
+          <Text style={[styles.otherName, { color: fg }]}>{otherName}</Text>
+          <BandScale value={station.api} scale={scale} />
+          {stale && <Text style={[styles.staleText, { color: fg }]}>{t.stale}</Text>}
+        </View>
+
+        <Card title={t.whatToDo}>
+          {advice.map((line) => (
+            <View key={line} style={styles.adviceRow}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.adviceText}>{line}</Text>
+            </View>
+          ))}
         </Card>
-      ) : null}
 
-      {source !== 'gps' && (
-        <Pressable onPress={onUseLocation} style={styles.linkBtn} accessibilityRole="button">
-          <Text style={styles.link}>{t.useLocation}</Text>
-        </Pressable>
-      )}
-      {locStatus === 'denied' && source !== 'pinned' && <Text style={styles.small}>{t.locDenied}</Text>}
-    </ScrollView>
+        {station.trend24h ? (
+          <TrendCard station={station} band={band} t={t} />
+        ) : station.forecast ? (
+          <Card title={t.forecastTitle}>
+            <Forecast days={station.forecast} scale={scale} t={t} />
+          </Card>
+        ) : null}
+
+        {source !== 'gps' && (
+          <Pressable onPress={onUseLocation} style={styles.linkBtn} accessibilityRole="button">
+            <Text style={styles.link}>{t.useLocation}</Text>
+          </Pressable>
+        )}
+        {locStatus === 'denied' && source !== 'pinned' && <Text style={styles.small}>{t.locDenied}</Text>}
+      </ScrollView>
+      {!stale && <HazeLayer level={band.key} variant="veil" />}
+    </View>
   );
 }
 
@@ -149,7 +155,8 @@ const styles = StyleSheet.create({
   muted: { fontSize: 13, color: colors.muted, textAlign: 'left' },
   small: { fontSize: 12, color: colors.muted },
   error: { fontSize: 13, color: '#a11d22' },
-  hero: { borderRadius: radius.hero, padding: 20, gap: 2 },
+  fill: { flex: 1 },
+  hero: { borderRadius: radius.hero, padding: 20, gap: 2, overflow: 'hidden' },
   heroLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.8 },
   big: { fontSize: 88, fontWeight: '800', letterSpacing: -3, lineHeight: 96, fontVariant: ['tabular-nums'] },
   bandName: { fontSize: 22, fontWeight: '700' },
@@ -158,7 +165,14 @@ const styles = StyleSheet.create({
   adviceRow: { flexDirection: 'row', gap: 8 },
   bullet: { fontSize: 15, color: colors.ink, lineHeight: 21 },
   adviceText: { flex: 1, fontSize: 15, color: colors.ink, lineHeight: 21 },
-  chip: { fontSize: 12, fontWeight: '600', paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
+  chip: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
   warn: { backgroundColor: '#fff4e5', borderColor: '#f0c48a', borderWidth: 1, borderRadius: 14, padding: 12, gap: 6 },
   warnTitle: { fontSize: 13, fontWeight: '700', color: '#7a3d00' },
   warnRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },

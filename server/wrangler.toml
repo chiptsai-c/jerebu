@@ -9,8 +9,7 @@ crons = ["*/15 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "jerebu"
-# Replace with the ID printed by `npx wrangler d1 create jerebu` before deploying.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "6c3efa8e-931b-47a3-914d-c70594f135e9"
 migrations_dir = "migrations"
 
 [observability]
