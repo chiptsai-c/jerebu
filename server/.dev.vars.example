@@ -1,0 +1,5 @@
+# Local secrets for `npm run dev`. Copy to .dev.vars (never commit it).
+# In production set these with `npx wrangler secret put <NAME>` instead.
+WAQI_TOKEN=
+# Optional: only needed if you turn on "enhanced push security" in your Expo account.
+EXPO_ACCESS_TOKEN=

@@ -1,0 +1,17 @@
+name = "jerebu-alerts"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Every 15 minutes. DOE publishes hourly; WAQI picks readings up at different times.
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jerebu"
+# Replace with the ID printed by `npx wrangler d1 create jerebu` before deploying.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
