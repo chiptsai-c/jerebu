@@ -10,6 +10,9 @@ const WAQI = 'https://api.waqi.info';
 // Rough boxes around Peninsular Malaysia and Malaysian Borneo.
 const BOUNDS = ['1.2,99.5,6.8,104.7', '0.8,109.5,7.4,119.4'];
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const OTHER_COUNTRIES = /singapore|thailand|indonesia|brunei/i;
+// States for DOE stations that WAQI names without one.
+const BARE_NAME_STATES = { Ipoh: 'Perak', Perai: 'Pulau Pinang', Miri: 'Sarawak' };
 
 export const IS_LIVE = Boolean(WAQI_TOKEN);
 
@@ -45,10 +48,12 @@ async function waqiReadings() {
   const lists = await Promise.all(BOUNDS.map((b) => waqiGet('/map/bounds', `&latlng=${b}&networks=all`)));
   const all = lists.flat();
 
-  // Keep Malaysian stations. Names normally end in ", Malaysia"; if WAQI ever drops that,
-  // fall back to everything inside the boxes (may include a few Singapore or Indonesia stations).
-  const named = all.filter((s) => /malaysia/i.test(s.station?.name ?? ''));
-  const pool = named.length ? named : all;
+  // Keep DOE stations: names ending in ", Malaysia", plus a few older DOE stations WAQI lists
+  // by bare town name ("Ipoh", "Miri"). Negative uids are third-party sensors, not DOE.
+  const pool = all.filter((s) => {
+    const name = s.station?.name ?? '';
+    return /malaysia/i.test(name) || (s.uid > 0 && !OTHER_COUNTRIES.test(name));
+  });
 
   const seen = new Set();
   const stations = [];
@@ -75,8 +80,9 @@ function splitName(full = '') {
     .map((p) => p.trim())
     .filter((p) => p && !/^malaysia$/i.test(p));
   if (parts.length === 0) return ['Unknown station', 'Malaysia'];
-  if (parts.length === 1) return [parts[0], 'Malaysia'];
-  return [parts.slice(0, -1).join(', '), parts[parts.length - 1]];
+  if (parts.length === 1) return [parts[0], BARE_NAME_STATES[parts[0]] ?? 'Malaysia'];
+  const state = parts[parts.length - 1].replace(/^w\.?\s*p\.?\s+/i, ''); // "W.p. Putrajaya" -> "Putrajaya"
+  return [parts.slice(0, -1).join(', '), state];
 }
 
 function pollutantName(code) {
