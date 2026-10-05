@@ -28,6 +28,22 @@ string the app generates and keeps. The server stores only its SHA-256 hash.
 
 `<id>` is a random ID the app generates (16–64 letters, digits or dashes).
 
+## Announcements page
+
+`/admin` is a password-protected web page for sending your own notifications, such as
+"Schools in Selangor closed tomorrow".
+
+- Write the message in English, and optionally BM. Phones set to BM get the BM version.
+- Send to one push token (a test), to phones following stations in chosen states, or to everyone with alerts on.
+- **Check reach** shows how many phones a message would go to. **Send** asks you to confirm that number first.
+
+Turn it on by setting a long random password: `npx wrangler secret put ADMIN_PASSWORD`.
+Without it, the page loads but every action answers "switched off". The page's API is
+`GET /admin/api/summary` and `POST /admin/api/send`, both with `Authorization: Bearer <ADMIN_PASSWORD>`.
+
+To get a test push token, open the Alerts tab in a development build and tap **Copy push token**.
+You can also paste that token into Expo's own tool at https://expo.dev/notifications.
+
 ## Run locally
 
 ```
@@ -48,6 +64,7 @@ npx wrangler login                 # free Cloudflare account
 npx wrangler d1 create jerebu      # copy the database_id it prints into wrangler.toml
 npm run db:migrate:remote
 npx wrangler secret put WAQI_TOKEN
+npx wrangler secret put ADMIN_PASSWORD   # turns on the /admin announcements page
 npm run deploy                     # prints https://jerebu-alerts.<your-subdomain>.workers.dev
 ```
 

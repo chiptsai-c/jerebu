@@ -1,13 +1,17 @@
+import { handleAdmin } from './admin';
 import { runAlerts } from './alerts';
+import { bearer, json, sameHash, sha256 } from './util';
 
 export interface Env {
   DB: D1Database;
   WAQI_TOKEN: string;
   EXPO_ACCESS_TOKEN?: string;
+  ADMIN_PASSWORD?: string;
 }
 
 // PUT    /devices/:id   register or update a phone (Authorization: Bearer <secret>)
 // DELETE /devices/:id   stop alerts for a phone
+// GET    /admin         announcements page (API under /admin/api/*, password protected)
 // GET    /health
 const DEVICE_PATH = /^\/devices\/([A-Za-z0-9-]{16,64})$/;
 const THRESHOLDS = [101, 151, 201, 301];
@@ -17,6 +21,7 @@ export default {
   async fetch(req, env) {
     const { pathname } = new URL(req.url);
     if (pathname === '/health') return json(200, { ok: true });
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) return handleAdmin(req, env, pathname);
 
     const match = pathname.match(DEVICE_PATH);
     if (!match) return json(404, { error: 'Not found' });
@@ -59,7 +64,7 @@ async function putDevice(req: Request, env: Env, id: string): Promise<Response> 
   const existing = await env.DB.prepare('SELECT secret_hash, threshold FROM devices WHERE id = ?')
     .bind(id)
     .first<{ secret_hash: string; threshold: number }>();
-  if (existing && !(await sameHash(existing.secret_hash, hash))) return json(403, { error: 'Wrong secret for this device' });
+  if (existing && !sameHash(existing.secret_hash, hash)) return json(403, { error: 'Wrong secret for this device' });
 
   const db = env.DB;
   await db.batch([
@@ -90,7 +95,7 @@ async function deleteDevice(req: Request, env: Env, id: string): Promise<Respons
   if (!secret) return json(401, { error: 'Send the device secret as "Authorization: Bearer <secret>"' });
   const row = await env.DB.prepare('SELECT secret_hash FROM devices WHERE id = ?').bind(id).first<{ secret_hash: string }>();
   if (!row) return json(200, { ok: true });
-  if (!(await sameHash(row.secret_hash, await sha256(secret)))) return json(403, { error: 'Wrong secret for this device' });
+  if (!sameHash(row.secret_hash, await sha256(secret))) return json(403, { error: 'Wrong secret for this device' });
   await env.DB.prepare('DELETE FROM devices WHERE id = ?').bind(id).run();
   return json(200, { ok: true });
 }
@@ -110,23 +115,3 @@ function validate(body: unknown): DeviceInput | string {
   return { pushToken: b.pushToken, lang: b.lang, threshold: b.threshold, stations: [...new Set(b.stations as string[])] };
 }
 
-function bearer(req: Request): string | null {
-  const m = (req.headers.get('Authorization') ?? '').match(/^Bearer (.{32,128})$/);
-  return m ? m[1] : null;
-}
-
-async function sha256(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function sameHash(a: string, b: string): Promise<boolean> {
-  const enc = new TextEncoder();
-  const ab = enc.encode(a);
-  const bb = enc.encode(b);
-  return ab.byteLength === bb.byteLength && crypto.subtle.timingSafeEqual(ab, bb);
-}
-
-function json(status: number, data: unknown): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-}

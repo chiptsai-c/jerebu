@@ -34,6 +34,13 @@ export async function requestPushPermission() {
   return (await Notifications.requestPermissionsAsync()).granted;
 }
 
+// This phone's Expo push token, e.g. ExponentPushToken[xxxx]. Needs notification permission.
+export async function getPushToken() {
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+  return data;
+}
+
 // Tells the server what this phone should be alerted about, or that alerts are off.
 // Skips the call when nothing changed since the last successful sync.
 export async function syncPushAlerts({ settings, nearestId, isLive }) {
@@ -50,8 +57,7 @@ export async function syncPushAlerts({ settings, nearestId, isLive }) {
     return isLive ? 'off' : 'needsLive';
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const { data: pushToken } = await Notifications.getExpoPushTokenAsync({ projectId });
+  const pushToken = await getPushToken();
   const ids = new Set(settings.followed);
   if (settings.followCurrent && nearestId) ids.add(nearestId);
   const payload = {

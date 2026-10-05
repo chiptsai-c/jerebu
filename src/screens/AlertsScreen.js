@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { ALERTS_URL, requestPushPermission } from '../push';
+import * as Clipboard from 'expo-clipboard';
+import { ALERTS_URL, getPushToken, requestPushPermission } from '../push';
 import { colors } from '../theme';
 import { Card, ScreenTitle } from '../components/Common';
 
@@ -106,7 +107,43 @@ export default function AlertsScreen({ settings, updateSettings, stations, t, on
           ))}
         </View>
       </Card>
+
+      {__DEV__ && <DevPushToken t={t} />}
     </ScrollView>
+  );
+}
+
+// Development builds only: copy this phone's push token to send test notifications
+// from expo.dev/notifications or the server's /admin page.
+function DevPushToken({ t }) {
+  const [state, setState] = useState({ token: null, message: null, error: false });
+
+  async function copy() {
+    try {
+      if (!(await requestPushPermission())) {
+        setState({ token: null, message: t.permDenied, error: true });
+        return;
+      }
+      const token = await getPushToken();
+      await Clipboard.setStringAsync(token);
+      setState({ token, message: t.tokenCopied, error: false });
+    } catch (e) {
+      setState({ token: null, message: t.pushError(e.message), error: true });
+    }
+  }
+
+  return (
+    <Card title={t.devTitle}>
+      <Pressable onPress={copy} style={styles.devBtn} accessibilityRole="button">
+        <Text style={styles.devBtnText}>{t.copyToken}</Text>
+      </Pressable>
+      {state.token ? (
+        <Text selectable style={styles.token}>
+          {state.token}
+        </Text>
+      ) : null}
+      {state.message ? <Text style={[styles.hint, state.error && styles.error]}>{state.message}</Text> : null}
+    </Card>
   );
 }
 
@@ -127,6 +164,16 @@ const styles = StyleSheet.create({
   group: { gap: 12 },
   dimmed: { opacity: 0.45 },
   error: { color: '#a11d22' },
+  devBtn: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  devBtnText: { fontSize: 14, fontWeight: '600', color: colors.accent },
+  token: { fontSize: 12, fontFamily: 'monospace', color: colors.ink },
   label: { fontSize: 15, color: colors.ink, fontWeight: '500' },
   hint: { fontSize: 12, color: colors.muted, lineHeight: 17 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

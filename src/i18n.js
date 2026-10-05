@@ -39,6 +39,9 @@ export const strings = {
     alertsOnHintPush: 'Get a notification when the haze gets bad at places you follow, even when the app is closed.',
     permDenied: 'Notifications are blocked. Allow them for Jerebu in your phone settings, then turn alerts on again.',
     pushError: (msg) => `Couldn't set up notifications (${msg}). Alerts still show on the Now tab.`,
+    devTitle: 'Developer',
+    copyToken: 'Copy push token',
+    tokenCopied: 'Copied. Paste it into expo.dev/notifications or the admin page to send a test.',
     pushStatus: {
       idle: '',
       local: '',
@@ -122,6 +125,9 @@ export const strings = {
     alertsOnHintPush: 'Terima notifikasi apabila jerebu teruk di tempat yang anda ikuti, walaupun aplikasi ditutup.',
     permDenied: 'Notifikasi disekat. Benarkan untuk Jerebu dalam tetapan telefon, kemudian hidupkan amaran semula.',
     pushError: (msg) => `Notifikasi gagal disediakan (${msg}). Amaran masih dipaparkan di tab Kini.`,
+    devTitle: 'Pembangun',
+    copyToken: 'Salin token push',
+    tokenCopied: 'Disalin. Tampal di expo.dev/notifications atau halaman admin untuk menghantar ujian.',
     pushStatus: {
       idle: '',
       local: '',
