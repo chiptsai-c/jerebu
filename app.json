@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Jerebu",
+    "slug": "jerebu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "my.jerebu.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Jerebu uses your location to show the haze reading from the nearest monitoring station."
+      }
+    },
+    "android": {
+      "package": "my.jerebu.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Jerebu uses your location to show the haze reading from the nearest monitoring station."
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}
