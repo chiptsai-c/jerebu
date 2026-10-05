@@ -5,7 +5,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { fetchReadings, fetchStationDetail } from './src/data/api';
-import { SCALES } from './src/data/bands';
+import { SCALES, bandFor, isStale } from './src/data/bands';
+import { HAZE_SKY } from './src/components/HazeLayer';
 import { nearestStation } from './src/data/geo';
 import { loadCache, loadSettings, saveCache, saveSettings } from './src/storage';
 import { placesOverThreshold } from './src/alerts';
@@ -196,7 +197,17 @@ function Main() {
   };
 
   return (
-    <View style={styles.root}>
+    <View
+      style={[
+        styles.root,
+        tab === 'now' &&
+          current &&
+          !isStale(current.station.updatedAt ?? data.updatedAt) && {
+            // Match the Now tab's hazy sky behind the status bar.
+            backgroundColor: HAZE_SKY[bandFor(current.station.api, scale).key],
+          },
+      ]}
+    >
       <StatusBar style="dark" />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
         {tab === 'now' && (

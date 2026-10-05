@@ -3,8 +3,9 @@ import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-nat
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 // Drifting fog that gets denser and browner as the air gets worse. Purely decorative.
-// "card" sits inside the coloured reading card (light fog over a strong colour);
-// "screen" sits behind the whole Now tab (darker fog over the pale background).
+// "card"   sits inside the coloured reading card (light fog over a strong colour).
+// "screen" sits behind everything on the Now tab (darker fog over the pale background).
+// "veil"   drifts over everything, cards included; kept faint so text stays readable.
 // Keys match band keys in both scales (US AQI and Malaysian API).
 const LEVELS = {
   card: {
@@ -17,12 +18,30 @@ const LEVELS = {
   },
   screen: {
     good: null,
-    moderate: null,
-    usg: { puffs: 4, opacity: 0.2, color: '#c4b79f' },
-    unhealthy: { puffs: 6, opacity: 0.28, color: '#b3a284' },
-    veryUnhealthy: { puffs: 8, opacity: 0.34, color: '#9f8c70' },
-    hazardous: { puffs: 10, opacity: 0.42, color: '#857259' },
+    moderate: { puffs: 4, opacity: 0.18, color: '#cbc2b0' },
+    usg: { puffs: 6, opacity: 0.26, color: '#c4b79f' },
+    unhealthy: { puffs: 8, opacity: 0.34, color: '#b3a284' },
+    veryUnhealthy: { puffs: 10, opacity: 0.4, color: '#9f8c70' },
+    hazardous: { puffs: 12, opacity: 0.48, color: '#857259' },
   },
+  veil: {
+    good: null,
+    moderate: null,
+    usg: { puffs: 3, opacity: 0.12, color: '#bfb196' },
+    unhealthy: { puffs: 4, opacity: 0.16, color: '#ad9c7e' },
+    veryUnhealthy: { puffs: 5, opacity: 0.2, color: '#988569' },
+    hazardous: { puffs: 6, opacity: 0.25, color: '#7d6a52' },
+  },
+};
+
+// Background colour of the Now tab: clear sky when the air is good, hazy beige when it's bad.
+export const HAZE_SKY = {
+  good: '#eef5f8',
+  moderate: '#f1f1ec',
+  usg: '#eeeae1',
+  unhealthy: '#e8e1d4',
+  veryUnhealthy: '#e0d6c4',
+  hazardous: '#d6c9b2',
 };
 
 // Deterministic pseudo-random in [0, 1), so the fog looks the same each time.
@@ -71,7 +90,7 @@ export default function HazeLayer({ level, variant = 'card' }) {
     >
       {box &&
         puffs.map((p) => {
-          const width = (variant === 'screen' ? box.width : box.height * 1.6) * p.scale;
+          const width = (variant === 'card' ? box.height * 1.6 : box.width) * p.scale;
           const height = width * 0.5;
           return (
             <Puff

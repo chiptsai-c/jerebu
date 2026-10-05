@@ -5,7 +5,7 @@ import { colors, radius } from '../theme';
 import BandScale from '../components/BandScale';
 import Sparkline from '../components/Sparkline';
 import Forecast from '../components/Forecast';
-import HazeLayer from '../components/HazeLayer';
+import HazeLayer, { HAZE_SKY } from '../components/HazeLayer';
 import { Card, SampleBanner } from '../components/Common';
 
 const TREND_CHIP = {
@@ -53,7 +53,7 @@ export default function NowScreen({
     source === 'gps' ? t.nearest(distanceKm.toFixed(1)) : source === 'pinned' ? t.chosen : t.defaultStation;
 
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, !stale && { backgroundColor: HAZE_SKY[band.key] }]}>
       {!stale && <HazeLayer level={band.key} variant="screen" />}
       <ScrollView contentContainerStyle={styles.content} refreshControl={refresher}>
         <SampleBanner text={isSample ? t.sample : t.liveSource} />
@@ -126,6 +126,7 @@ export default function NowScreen({
         )}
         {locStatus === 'denied' && source !== 'pinned' && <Text style={styles.small}>{t.locDenied}</Text>}
       </ScrollView>
+      {!stale && <HazeLayer level={band.key} variant="veil" />}
     </View>
   );
 }
